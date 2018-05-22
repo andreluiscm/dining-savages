@@ -3,12 +3,14 @@ package monitor;
 public class Monitor
 {
 	private Pot pot;
-	private Auxiliar monitorAwake;
+	private Auxiliar condAwake;
+	private Auxiliar condRefill;
 	
 	public Monitor(Pot pot)
 	{
 		this.pot = pot;
-		monitorAwake = new Auxiliar();
+		condAwake = new Auxiliar();
+		condRefill = new Auxiliar();
 	}
 	
 	public synchronized void pickFood(Savage savage) throws InterruptedException
@@ -21,12 +23,15 @@ public class Monitor
 						+ "- Savage " + savage.getId() + " woke up the cooker.\n");
 			}
 			
-			synchronized (monitorAwake)
+			synchronized (condAwake)
 			{
-				monitorAwake.notify();
+				condAwake.notify();
 			}
 			
-			this.wait();
+			synchronized (condRefill)
+			{
+				condRefill.wait();
+			}
 		}
 		
 		synchronized (pot)
@@ -37,9 +42,9 @@ public class Monitor
 	
 	public void refill(Cooker cooker) throws InterruptedException
 	{
-		synchronized (monitorAwake)
+		synchronized (condAwake)
 		{
-			monitorAwake.wait();
+			condAwake.wait();
 		}
 		
 		synchronized (pot)
@@ -47,9 +52,9 @@ public class Monitor
 			pot.refill();
 		}
 		
-		synchronized (this)
+		synchronized (condRefill)
 		{
-			this.notifyAll();
+			condRefill.notifyAll();
 		}
 	}
 }
